@@ -9,14 +9,21 @@ from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEventHandler
 
-src_dir = "../../Downloads"
-pdfs_dir = "../pdfs"
-lcs_dir = "../lcs"
 
+# folder to watch
+src_dir = "../../Downloads" 
+
+#folders to place files in 
+pdfs_dir = "../pdfs" #
+imgs_dir = "../imgs"
+
+docs = [".pdfs", ".doc", ".docx"]
+imgs = [".jpg", ".jpeg", ".png", ".svg"]
 
 def makeUniqueName(dst, name):
     filename, extension = splitext(name)
     counter = 1
+    # if there will be duplicate files then add an identifier as a number
     while exists(f"{dst}/{name}"):
         name = f"{filename}({str(counter)}){extension}"
         counter += 1
@@ -31,6 +38,21 @@ def move_file(dst, file, name):
         newName = join(dst, uniqueName)
         rename(oldName, newName)
     move(file, dst)
+
+
+def docHandler(file, name):
+        for docExtension in docs:
+            if name.endswith(docExtension):
+                move_file(pdfs_dir, file, name)
+                logging.info(f"Moving doc file: {name}")
+
+
+
+def imgHandler(file, name):
+        for imgExtension in imgs:
+            if name.endswith(imgExtension):
+                move_file(imgs_dir, file, name)
+                logging.info(f"Moving img file: {name}")
 
 
 class OnMyWatch:
@@ -54,8 +76,11 @@ class OnMyWatch:
         self.observer.join()
 
 
-class Handler(FileSystemEventHandler):
 
+
+
+class Handler(FileSystemEventHandler):
+    # Ran when thre is a change in the source directory: src_dir
     @staticmethod
     def on_any_event(event):
         if event.is_directory:
@@ -68,12 +93,9 @@ class Handler(FileSystemEventHandler):
             for file in onlyfiles:
                 print(file)
                 name = file.name
-                if name.endswith(".pdf"):
-                    dst = pdfs_dir
-                    move_file(dst, file, name)
-                elif name.endswith(".lc"):
-                    dst = lcs_dir
-                    move_file(dst, file, name)
+                docHandler(file, name)
+                imgHandler(file, name)
+
         '''
         elif event.event_type == 'created':
             # Event is created, you can process it now
